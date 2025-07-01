@@ -11,7 +11,7 @@ export default function Home() {
             <span className="font-bold">FlexFloat Explorer</span>
           </div>
           <a
-            href="https://github.com/firebase/firebase-genkit-samples/tree/main/nextjs-starter"
+            href="https://yohanchatelain.github.io/"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="View on GitHub"
