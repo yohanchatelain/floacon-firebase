@@ -8,7 +8,7 @@ export default function Home() {
         <div className="container flex h-14 max-w-screen-2xl items-center justify-between">
           <div className="mr-4 flex items-center">
             <Snowflake className="mr-2 h-6 w-6 text-primary" />
-            <span className="font-bold">FlexFloat Explorer</span>
+            <span className="font-bold">Floacon Explorer</span>
           </div>
           <a
             href="https://yohanchatelain.github.io/"
