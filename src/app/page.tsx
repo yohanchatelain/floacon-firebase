@@ -1,4 +1,4 @@
-import { FloatConverter } from '@/components/float-converter';
+import { FloatConverter } from '@/components/ui/float-converter';
 import { Github, Binary } from 'lucide-react';
 
 export default function Home() {
