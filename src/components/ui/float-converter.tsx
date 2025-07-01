@@ -280,165 +280,165 @@ export function FloatConverter() {
 
         return { value: finalValue.toPrecision(outputPrecision), type: floatType };
     }, [bits, exponentBits, mantissaBits, exponentStr, mantissaStr]);
-+
-+    const representations = useMemo(() => {
-+        const totalBits = 1 + exponentBits + mantissaBits;
-+        const hexPadding = Math.ceil(totalBits / 4);
-+        const binary = `${signBit} ${exponentStr} ${mantissaStr}`;
-+        const hex = `0x${BigInt('0b' + bits).toString(16).toUpperCase().padStart(hexPadding, '0')}`;
-+
-+        return { binary, hex };
-+    }, [bits, exponentBits, mantissaBits, signBit, exponentStr, mantissaStr]);
-+
-+    const formatInfo = useMemo(() => {
-+        Decimal.set({ precision: 100 });
-+        const bias = (1 << (exponentBits - 1)) - 1;
-+        const maxNormalExp = (1 << exponentBits) - 2 - bias;
-+        const minNormalExp = 1 - bias;
-+        const outputPrecision = mantissaBits > 53 ? 30 : 17;
-+
-+        const maxNormal = new Decimal(2).minus(new Decimal(2).pow(-mantissaBits)).times(new Decimal(2).pow(maxNormalExp));
-+        const minNormal = new Decimal(2).pow(minNormalExp);
-+        const minDenormal = new Decimal(2).pow(1 - bias - mantissaBits);
-+        const epsilon = new Decimal(2).pow(-mantissaBits);
-+
-+        return {
-+            bias,
-+            maxNormal: maxNormal.toPrecision(outputPrecision),
-+            minNormal: minNormal.toPrecision(outputPrecision),
-+            minDenormal: minDenormal.toPrecision(outputPrecision),
-+            epsilon: epsilon.toPrecision(outputPrecision),
-+        };
-+    }, [exponentBits, mantissaBits]);
-+
-+    return (
-+        <TooltipProvider>
-+            <div className="container mx-auto max-w-4xl py-8 space-y-6">
-+                <Card>
-+                    <CardHeader>
-+                        <CardTitle>Format Configuration</CardTitle>
-+                        <CardDescription>Define your custom floating-point format or select a preset.</CardDescription>
-+                    </CardHeader>
-+                    <CardContent className="space-y-6 pt-2">
-+                        <Select onValueChange={handlePresetChange}>
-+                          <SelectTrigger className="w-full">
-+                            <SelectValue placeholder="Select a preset format..." />
-+                          </SelectTrigger>
-+                          <SelectContent>
-+                            {PRESETS.map(p => <SelectItem key={p.name} value={p.name}>{p.name}</SelectItem>)}
-+                          </SelectContent>
-+                        </Select>
-+                        <div className="grid gap-4">
-+                            <Label>Exponent Bits: {exponentBits}</Label>
-+                            <Slider
-+                                min={2}
-+                                max={15}
-+                                step={1}
-+                                value={[exponentBits]}
-+                                onValueChange={handleExponentChange}
-+                            />
-+                        </div>
-+                        <div className="grid gap-4">
-+                            <Label>Mantissa Bits: {mantissaBits}</Label>
-+                            <Slider
-+                                min={2}
-+                                max={112}
-+                                step={1}
-+                                value={[mantissaBits]}
-+                                onValueChange={handleMantissaChange}
-+                            />
-+                        </div>
-+                    </CardContent>
-+                </Card>
-+
-+                <Card>
-+                    <CardHeader>
-+                         <CardTitle>Decimal to Float</CardTitle>
-+                         <CardDescription>Enter a decimal value to convert to the format above.</CardDescription>
-+                    </CardHeader>
-+                    <CardContent>
-+                        <div className="flex gap-2">
-+                            <Input
-+                                type="text"
-+                                value={decimalInput}
-+                                onChange={(e) => setDecimalInput(e.target.value)}
-+                                onKeyDown={(e) => e.key === 'Enter' && handleConvertToBits()}
-+                                placeholder="e.g., 1.23e-10, -Infinity, NaN"
-+                            />
-+                            <Button onClick={handleConvertToBits}>Convert</Button>
-+                        </div>
-+                    </CardContent>
-+                </Card>
-+
-+                <Card>
-+                    <CardHeader>
-+                        <div className="flex justify-between items-start">
-+                            <div>
-+                                <CardTitle>Interactive Bit Representation</CardTitle>
-+                                <CardDescription>Click to toggle a bit. Alt+Click for more options.</CardDescription>
-+                            </div>
-+                            <div className="flex gap-2">
-+                                <Button variant="outline" size="sm" onClick={() => handleSetAllBits('0')}>Zeros</Button>
-+                                <Button variant="outline" size="sm" onClick={() => handleSetAllBits('1')}>Ones</Button>
-+                                <Button variant="outline" size="sm" onClick={handleInvertBits}>Invert</Button>
-+                            </div>
-+                        </div>
-+                    </CardHeader>
-+                    <CardContent className="space-y-4">
-+                        <BitField bits={signBit} onToggle={handleBitToggle} label="Sign" onSetRemaining={handleSetRemaining} startIndex={0} />
-+                        <BitField bits={exponentStr} onToggle={handleBitToggle} label="Exponent" onSetRemaining={handleSetRemaining} startIndex={1} />
-+                        <BitField bits={mantissaStr} onToggle={handleBitToggle} label="Mantissa" onSetRemaining={handleSetRemaining} startIndex={1 + exponentBits} />
-+                    </CardContent>
-+                </Card>
-+
-+                <Card>
-+                    <CardHeader>
-+                        <CardTitle>Result</CardTitle>
-+                    </CardHeader>
-+                    <CardContent>
-+                        {type === 'Infinity' || type === 'NaN' ? (
-+                            <Alert variant="destructive">
-+                                {type === 'Infinity' ? <InfinityIcon className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
-+                                <AlertTitle>{type}</AlertTitle>
-+                                <AlertDescription>
-+                                    {type === 'Infinity' ? `Represents ${bits[0] === '1' ? 'negative' : 'positive'} infinity.` : 'Not-a-Number, represents an invalid operation result.'}
-+                                </AlertDescription>
-+                            </Alert>
-+                        ) : (
-+                             <div className="space-y-4">
-+                                <div>
-+                                    <p className="text-sm text-muted-foreground">Decimal Value</p>
-+                                    <p className="text-2xl font-bold font-mono break-all" data-testid="decimal-value">{value}</p>
-+                                    <p className="text-sm text-accent">{type} Value</p>
-+                                </div>
-+                                <Separator />
-+                                <div className="space-y-2 font-mono text-sm">
-+                                    <InfoEntry label="Binary" value={representations.binary} />
-+                                    <InfoEntry label="Hex" value={representations.hex} />
-+                                </div>
-+                            </div>
-+                        )}
-+                    </CardContent>
-+                </Card>
-+
-+                <Card>
-+                    <CardHeader>
-+                        <CardTitle>Format Information</CardTitle>
-+                        <CardDescription>
-+                            Properties of the `FlexFloat-{1 + exponentBits + mantissaBits}` format.
-+                        </CardDescription>
-+                    </CardHeader>
-+                    <CardContent className="space-y-4">
-+                         <InfoEntry label="Total Bits" value={`${1 + exponentBits + mantissaBits}`} />
-+                         <InfoEntry label="Exponent Bias" value={`${formatInfo.bias} (0x${formatInfo.bias.toString(16).toUpperCase()})`} />
-+                         <Separator />
-+                         <InfoEntry label="Epsilon" tooltip="The smallest value that can be added to 1.0 to get a different number." value={formatInfo.epsilon} />
-+                         <InfoEntry label="Max Normal" tooltip="The largest finite number representable." value={formatInfo.maxNormal} />
-+                         <InfoEntry label="Min Normal" tooltip="The smallest positive number with a leading 1." value={formatInfo.minNormal} />
-+                         <InfoEntry label="Min Denormal" tooltip="The smallest positive number representable." value={formatInfo.minDenormal} />
-+                    </CardContent>
-+                </Card>
-+            </div>
-+        </TooltipProvider>
-+    );
+
+    const representations = useMemo(() => {
+        const totalBits = 1 + exponentBits + mantissaBits;
+        const hexPadding = Math.ceil(totalBits / 4);
+        const binary = `${signBit} ${exponentStr} ${mantissaStr}`;
+        const hex = `0x${BigInt('0b' + bits).toString(16).toUpperCase().padStart(hexPadding, '0')}`;
+
+        return { binary, hex };
+    }, [bits, exponentBits, mantissaBits, signBit, exponentStr, mantissaStr]);
+
+    const formatInfo = useMemo(() => {
+        Decimal.set({ precision: 100 });
+        const bias = (1 << (exponentBits - 1)) - 1;
+        const maxNormalExp = (1 << exponentBits) - 2 - bias;
+        const minNormalExp = 1 - bias;
+        const outputPrecision = mantissaBits > 53 ? 30 : 17;
+
+        const maxNormal = new Decimal(2).minus(new Decimal(2).pow(-mantissaBits)).times(new Decimal(2).pow(maxNormalExp));
+        const minNormal = new Decimal(2).pow(minNormalExp);
+        const minDenormal = new Decimal(2).pow(1 - bias - mantissaBits);
+        const epsilon = new Decimal(2).pow(-mantissaBits);
+
+        return {
+            bias,
+            maxNormal: maxNormal.toPrecision(outputPrecision),
+            minNormal: minNormal.toPrecision(outputPrecision),
+            minDenormal: minDenormal.toPrecision(outputPrecision),
+            epsilon: epsilon.toPrecision(outputPrecision),
+        };
+    }, [exponentBits, mantissaBits]);
+
+    return (
+        <TooltipProvider>
+            <div className="container mx-auto max-w-4xl py-8 space-y-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Format Configuration</CardTitle>
+                        <CardDescription>Define your custom floating-point format or select a preset.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6 pt-2">
+                        <Select onValueChange={handlePresetChange}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select a preset format..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {PRESETS.map(p => <SelectItem key={p.name} value={p.name}>{p.name}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                        <div className="grid gap-4">
+                            <Label>Exponent Bits: {exponentBits}</Label>
+                            <Slider
+                                min={2}
+                                max={15}
+                                step={1}
+                                value={[exponentBits]}
+                                onValueChange={handleExponentChange}
+                            />
+                        </div>
+                        <div className="grid gap-4">
+                            <Label>Mantissa Bits: {mantissaBits}</Label>
+                            <Slider
+                                min={2}
+                                max={112}
+                                step={1}
+                                value={[mantissaBits]}
+                                onValueChange={handleMantissaChange}
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                         <CardTitle>Decimal to Float</CardTitle>
+                         <CardDescription>Enter a decimal value to convert to the format above.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex gap-2">
+                            <Input
+                                type="text"
+                                value={decimalInput}
+                                onChange={(e) => setDecimalInput(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleConvertToBits()}
+                                placeholder="e.g., 1.23e-10, -Infinity, NaN"
+                            />
+                            <Button onClick={handleConvertToBits}>Convert</Button>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <CardTitle>Interactive Bit Representation</CardTitle>
+                                <CardDescription>Click to toggle a bit. Alt+Click for more options.</CardDescription>
+                            </div>
+                            <div className="flex gap-2">
+                                <Button variant="outline" size="sm" onClick={() => handleSetAllBits('0')}>Zeros</Button>
+                                <Button variant="outline" size="sm" onClick={() => handleSetAllBits('1')}>Ones</Button>
+                                <Button variant="outline" size="sm" onClick={handleInvertBits}>Invert</Button>
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <BitField bits={signBit} onToggle={handleBitToggle} label="Sign" onSetRemaining={handleSetRemaining} startIndex={0} />
+                        <BitField bits={exponentStr} onToggle={handleBitToggle} label="Exponent" onSetRemaining={handleSetRemaining} startIndex={1} />
+                        <BitField bits={mantissaStr} onToggle={handleBitToggle} label="Mantissa" onSetRemaining={handleSetRemaining} startIndex={1 + exponentBits} />
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Result</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {type === 'Infinity' || type === 'NaN' ? (
+                            <Alert variant="destructive">
+                                {type === 'Infinity' ? <InfinityIcon className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+                                <AlertTitle>{type}</AlertTitle>
+                                <AlertDescription>
+                                    {type === 'Infinity' ? `Represents ${bits[0] === '1' ? 'negative' : 'positive'} infinity.` : 'Not-a-Number, represents an invalid operation result.'}
+                                </AlertDescription>
+                            </Alert>
+                        ) : (
+                             <div className="space-y-4">
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Decimal Value</p>
+                                    <p className="text-2xl font-bold font-mono break-all" data-testid="decimal-value">{value}</p>
+                                    <p className="text-sm text-accent">{type} Value</p>
+                                </div>
+                                <Separator />
+                                <div className="space-y-2 font-mono text-sm">
+                                    <InfoEntry label="Binary" value={representations.binary} />
+                                    <InfoEntry label="Hex" value={representations.hex} />
+                                </div>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Format Information</CardTitle>
+                        <CardDescription>
+                            Properties of the `FlexFloat-{1 + exponentBits + mantissaBits}` format.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                         <InfoEntry label="Total Bits" value={`${1 + exponentBits + mantissaBits}`} />
+                         <InfoEntry label="Exponent Bias" value={`${formatInfo.bias} (0x${formatInfo.bias.toString(16).toUpperCase()})`} />
+                         <Separator />
+                         <InfoEntry label="Epsilon" tooltip="The smallest value that can be added to 1.0 to get a different number." value={formatInfo.epsilon} />
+                         <InfoEntry label="Max Normal" tooltip="The largest finite number representable." value={formatInfo.maxNormal} />
+                         <InfoEntry label="Min Normal" tooltip="The smallest positive number with a leading 1." value={formatInfo.minNormal} />
+                         <InfoEntry label="Min Denormal" tooltip="The smallest positive number representable." value={formatInfo.minDenormal} />
+                    </CardContent>
+                </Card>
+            </div>
+        </TooltipProvider>
+    );
 }
